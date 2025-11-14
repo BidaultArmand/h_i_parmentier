@@ -1,0 +1,34 @@
+{
+    "recipes": [
+      {
+        "name": "Salade de quinoa aux légumes de saison",
+        "ingredients": [
+          {
+            "name": "Quinoa",
+            "quantity": "100g",
+            "category": "Céréales"
+          },
+          {
+            "name": "Légumes de saison",
+            "quantity": "200g",
+            "category": "Légumes"
+          },
+          {
+            "name": "Huile d'olive",
+            "quantity": "2 cuillères à soupe",
+            "category": "Huiles"
+          },
+          {
+            "name": "Sel",
+            "quantity": "1 pincée",
+            "category": "Épices"
+          },
+          {
+            "name": "Poivre",
+            "quantity": "1 pincée",
+            "category": "Épices"
+          }
+        ]
+      }
+    ]
+  }
