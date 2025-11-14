@@ -81,6 +81,15 @@ Return ONLY a valid JSON array of recipe objects with this exact structure:
     "cuisine": "Cuisine type",
     "difficulty": "easy|medium|hard",
     "prepTime": "30 min",
+    "ingredients": [
+      {"name": "Ingredient name", "quantity": "200g"},
+      {"name": "Another ingredient", "quantity": "1 pièce"}
+    ],
+    "steps": [
+      "Step 1: Detailed instruction",
+      "Step 2: Next instruction",
+      "Step 3: Final step"
+    ],
     "imageSearch": "simple search term for food image (e.g., 'pasta carbonara', 'grilled chicken')"
   }
 ]
