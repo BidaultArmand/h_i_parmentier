@@ -36,13 +36,6 @@ function Header() {
           {user ? (
             <>
               <Link
-                to="/chat"
-                className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
-              >
-                <MessageSquare className="h-4 w-4" />
-                AI Assistant
-              </Link>
-              <Link
                 to="/products"
                 className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
               >
