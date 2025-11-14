@@ -80,7 +80,8 @@ Return ONLY a valid JSON array of recipe objects with this exact structure:
     "description": "Brief description (max 60 chars)",
     "cuisine": "Cuisine type",
     "difficulty": "easy|medium|hard",
-    "prepTime": "30 min"
+    "prepTime": "30 min",
+    "imageSearch": "simple search term for food image (e.g., 'pasta carbonara', 'grilled chicken')"
   }
 ]
 
@@ -514,6 +515,72 @@ Return a detailed JSON with ingredients per recipe and a consolidated shopping l
     res.status(500).json({
       success: false,
       error: 'Failed to generate ingredients'
+    });
+  }
+};
+
+// NEW ENDPOINT 4: Generate recipe images using DALL-E for multiple recipes
+export const generateRecipeImages = async (req, res) => {
+  try {
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        error: 'OpenAI service is not available.'
+      });
+    }
+
+    const { recipes } = req.body;
+
+    if (!recipes || recipes.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Recipes array is required'
+      });
+    }
+
+    console.log(`Generating ${recipes.length} images with DALL-E...`);
+
+    // Generate images for all recipes in parallel
+    const imagePromises = recipes.map(async (recipe) => {
+      try {
+        // Simple, concise prompt for faster generation
+        const prompt = `Food photo: ${recipe.name}`;
+
+        const response = await openai.images.generate({
+          model: "dall-e-2", // DALL-E 2: faster and cheaper ($0.02 vs $0.04)
+          prompt: prompt,
+          n: 1,
+          size: "512x512", // Smaller size for speed and cost
+        });
+
+        return {
+          recipeName: recipe.name,
+          imageUrl: response.data[0].url,
+          success: true
+        };
+      } catch (error) {
+        console.error(`Failed to generate image for ${recipe.name}:`, error.message);
+        return {
+          recipeName: recipe.name,
+          imageUrl: null,
+          success: false,
+          error: error.message
+        };
+      }
+    });
+
+    const results = await Promise.all(imagePromises);
+
+    res.json({
+      success: true,
+      images: results
+    });
+  } catch (error) {
+    console.error('Generate images error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate images',
+      details: error.message
     });
   }
 };
