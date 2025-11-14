@@ -19,6 +19,7 @@ export default function Home() {
         <Button asChild size="lg" variant="outline">
           <Link to="/chat">AI Assistant</Link>
         </Button>
+
       </div>
 
       {/* Zone totalement vierge */}

@@ -1,0 +1,4 @@
+OPENAI_API_KEY is not set. AI chat assistant is disabled.
+🚀 Server is running on port 5006
+📡 API available at http://localhost:5006/api
+🏥 Health check: http://localhost:5006/api/health

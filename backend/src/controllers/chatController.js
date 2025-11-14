@@ -1,9 +1,15 @@
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
+if (!openaiApiKey) {
+  console.warn('OPENAI_API_KEY is not set. AI chat assistant is disabled.');
+}
+
+const openai = openaiApiKey ? new OpenAI({
+  apiKey: openaiApiKey,
+}) : null;
 
 const SYSTEM_PROMPT = `You are a smart grocery shopping assistant. Help users create shopping lists and add products to their baskets.
 
@@ -31,6 +37,13 @@ Keep suggestions practical and based on common grocery items.`;
 export const chat = async (req, res) => {
   try {
     const { message, conversationHistory = [], basketId } = req.body;
+
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        error: 'AI assistant unavailable: missing OPENAI_API_KEY environment variable'
+      });
+    }
 
     if (!message) {
       return res.status(400).json({

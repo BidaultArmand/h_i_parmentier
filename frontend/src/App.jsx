@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import LandingPageDev from './pages/LandingPageDev';
+import ProductScanner from './pages/ProductScanner';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/landing-dev" element={<LandingPageDev />} />
+            <Route path="/scanner" element={<ProductScanner />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
