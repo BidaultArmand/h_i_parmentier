@@ -1,0 +1,22 @@
+# Python Dependencies for Smart Grocery Comparator
+# Pour installer: pip install -r requirements.txt
+
+# API OpenFoodFacts pour la récupération de données produits
+openfoodfacts>=3.1.0
+
+# HTTP requests
+requests>=2.32.5
+
+# Validation de données et parsing
+pydantic>=2.12.4
+
+# Progress bars pour scripts CLI
+tqdm>=4.67.1
+
+# Dépendances système (généralement installées automatiquement)
+certifi>=2025.11.12
+charset-normalizer>=3.4.4
+idna>=3.11
+urllib3>=2.5.0
+typing-extensions>=4.15.0
+
