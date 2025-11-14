@@ -1,0 +1,25 @@
+[
+  {
+    "timestamp": "2025-11-14T13:57:01.222Z",
+    "response": "Je vous propose une recette de pâtes à l'ail et à l'huile d'olive. C'est une recette simple, rapide et délicieuse. Vous aurez besoin de:\n\n1. Des pâtes de votre choix\n2. De l'ail\n3. De l'huile d'olive\n\nPour la préparation, faites cuire les pâtes selon les instructions sur l'emballage. Pendant ce temps, hachez quelques gousses d'ail et faites-les revenir dans l'huile d'olive jusqu'à ce qu'elles soient dorées. Une fois les pâtes cuites, égouttez-les et mélangez-les avec l'ail et l'huile d'olive. C'est prêt à servir!\n\nSi vous me dites quel panier utiliser, je peux ajouter ces ingrédients pour vous. Sinon, voulez-vous que je crée un nouveau panier pour vous?\n\n{\n  \"action\": \"suggest_products\",\n  \"products\": [{\"name\": \"Pasta\", \"category\": \"Pasta & Rice\", \"quantity\": 1}, {\"name\": \"Garlic\", \"category\": \"Vegetables\", \"quantity\": 1}, {\"name\": \"Olive Oil\", \"category\": \"Oils, Vinegars & Salad Dressings\", \"quantity\": 1}]\n}",
+    "products": [
+      {
+        "name": "Pasta",
+        "category": "Pasta & Rice",
+        "quantity": 1
+      },
+      {
+        "name": "Garlic",
+        "category": "Vegetables",
+        "quantity": 1
+      },
+      {
+        "name": "Olive Oil",
+        "category": "Oils, Vinegars & Salad Dressings",
+        "quantity": 1
+      }
+    ],
+    "basketName": null,
+    "basketId": null
+  }
+]

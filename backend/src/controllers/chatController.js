@@ -1,9 +1,49 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PRODUCT_SEARCH_PATH = path.resolve(__dirname, '../../data/product_to_search.json');
+
+const persistProductSuggestions = async (assistantMessage, actionData) => {
+  if (!actionData || actionData.action !== 'suggest_products') {
+    return;
+  }
+
+  const entry = {
+    timestamp: new Date().toISOString(),
+    response: assistantMessage,
+    products: actionData.products || [],
+    basketName: actionData.basketName || null,
+    basketId: actionData.basketId || null
+  };
+
+  try {
+    let existingEntries = [];
+    try {
+      const fileContent = await fs.readFile(PRODUCT_SEARCH_PATH, 'utf-8');
+      if (fileContent.trim()) {
+        existingEntries = JSON.parse(fileContent);
+      }
+    } catch (readError) {
+      if (readError.code !== 'ENOENT') {
+        throw readError;
+      }
+    }
+
+    existingEntries.push(entry);
+    await fs.writeFile(PRODUCT_SEARCH_PATH, JSON.stringify(existingEntries, null, 2));
+  } catch (fileError) {
+    console.error('Failed to persist suggest_products response:', fileError);
+  }
+};
 
 const SYSTEM_PROMPT = `You are a smart grocery shopping assistant. Help users create shopping lists and add products to their baskets.
 
@@ -103,6 +143,10 @@ When the user asks to add products, use this basket ID (${basketId}) to add item
       } catch (e) {
         console.log('No valid JSON action found');
       }
+    }
+
+    if (action === 'suggest_products') {
+      await persistProductSuggestions(assistantMessage, actionData);
     }
 
     res.json({
