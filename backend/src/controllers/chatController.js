@@ -1,4 +1,7 @@
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
 
@@ -14,6 +17,30 @@ if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-ap
 } else {
   console.warn('⚠️  OpenAI API key not configured. Chat features will be disabled.');
 }
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PRODUCT_SEARCH_PATH = path.resolve(__dirname, '../../data/product_to_search.json');
+
+const persistProductSuggestions = async (assistantMessage, actionData) => {
+  if (!actionData || actionData.action !== 'suggest_products') {
+    return;
+  }
+
+  const entry = {
+    timestamp: new Date().toISOString(),
+    response: assistantMessage,
+    products: actionData.products || [],
+    basketName: actionData.basketName || null,
+    basketId: actionData.basketId || null
+  };
+
+  try {
+    await fs.writeFile(PRODUCT_SEARCH_PATH, JSON.stringify(entry, null, 2));
+  } catch (fileError) {
+    console.error('Failed to persist suggest_products response:', fileError);
+  }
+};
 
 const SYSTEM_PROMPT = `You are a smart grocery shopping assistant. Help users create shopping lists and add products to their baskets.
 
@@ -188,6 +215,10 @@ When the user asks to add products, use this basket ID (${basketId}) to add item
       } catch (e) {
         console.log('No valid JSON action found');
       }
+    }
+
+    if (action === 'suggest_products') {
+      await persistProductSuggestions(assistantMessage, actionData);
     }
 
     res.json({

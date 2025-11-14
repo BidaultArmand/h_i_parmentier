@@ -1,5 +1,6 @@
 import app from './app.js';
 import dotenv from 'dotenv';
+import { startWatching } from './services/agpWatcher.js';
 
 dotenv.config();
 
@@ -9,4 +10,8 @@ app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  console.log('');
+
+  // Démarrer la surveillance du fichier JSON pour les recherches automatiques
+  startWatching();
 });

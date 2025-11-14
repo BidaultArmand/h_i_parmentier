@@ -1,0 +1,6 @@
+# Ignorer tous les fichiers de résultats AGP
+*.txt
+
+# Garder ce fichier .gitignore et le README
+!.gitignore
+!README.md
