@@ -7,6 +7,7 @@ import Chat from './pages/Chat';
 import Products from './pages/Products';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import LandingPageDev from './pages/LandingPageDev';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <main className="flex-1 flex flex-col overflow-hidden">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/landing-dev" element={<LandingPageDev />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
