@@ -39,7 +39,8 @@ function Chat() {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 160); // Min 48px, Max 160px
+      textarea.style.height = newHeight + 'px';
     }
   };
 
@@ -378,10 +379,17 @@ function Chat() {
           </div>
         </div>
 
-        {/* Chat Area - Compact */}
-        <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-xl overflow-hidden flex flex-col" style={{ height: '180px' }}>
+        {/* Chat Area - Dynamic Height */}
+        <div 
+          className="bg-card border-2 border-primary/20 rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all duration-300"
+          style={{ 
+            minHeight: '180px',
+            maxHeight: messages.length === 0 ? '180px' : '500px',
+            height: messages.length === 0 ? '180px' : 'auto'
+          }}
+        >
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: messages.length > 0 ? '420px' : 'none' }}>
             {messages.length === 0 && !loading && (
               <div className="h-full flex items-center justify-center">
                 <p className="text-xs text-muted-foreground text-center max-w-md">
@@ -484,9 +492,9 @@ function Chat() {
                 }}
                 placeholder="Ex: Plats méditerranéens avec produits de saison"
                 disabled={loading}
-                rows={2}
-                className="flex-1 resize-none border border-primary/20 rounded-xl px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50 bg-background"
-                style={{ minHeight: '48px', maxHeight: '120px' }}
+                rows={1}
+                className="flex-1 resize-none border border-primary/20 rounded-xl px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50 bg-background transition-all duration-200"
+                style={{ minHeight: '48px', maxHeight: '160px', overflow: 'hidden' }}
               />
               <Button 
                 type="submit" 
