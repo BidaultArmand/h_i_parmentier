@@ -26,20 +26,7 @@ const persistProductSuggestions = async (assistantMessage, actionData) => {
   };
 
   try {
-    let existingEntries = [];
-    try {
-      const fileContent = await fs.readFile(PRODUCT_SEARCH_PATH, 'utf-8');
-      if (fileContent.trim()) {
-        existingEntries = JSON.parse(fileContent);
-      }
-    } catch (readError) {
-      if (readError.code !== 'ENOENT') {
-        throw readError;
-      }
-    }
-
-    existingEntries.push(entry);
-    await fs.writeFile(PRODUCT_SEARCH_PATH, JSON.stringify(existingEntries, null, 2));
+    await fs.writeFile(PRODUCT_SEARCH_PATH, JSON.stringify(entry, null, 2));
   } catch (fileError) {
     console.error('Failed to persist suggest_products response:', fileError);
   }
