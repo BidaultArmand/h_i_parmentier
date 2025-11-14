@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * PAGE DE DÉVELOPPEMENT POUR L'ÉQUIPE FRONTEND - LANDING PAGE
@@ -35,7 +36,7 @@ const LandingPageDev = () => {
 
       <main className="container mx-auto px-4 py-12">
         {/* Section Hero - Exemple de structure */}
-        <section className="mb-20">
+        <section className="mb-12">
           <div className="text-center">
             <h1 className="text-5xl font-bold text-gray-900 mb-6">
               Votre Landing Page - En Développement
@@ -44,6 +45,30 @@ const LandingPageDev = () => {
               Cette zone est prête pour votre équipe frontend.
               Le header avec connexion utilisateur est déjà intégré.
             </p>
+          </div>
+        </section>
+
+        {/* Onglets rapides */}
+        <section className="mb-16">
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link
+              to="/products"
+              className="px-6 py-3 rounded-full border border-accent-green text-accent-green font-semibold hover:bg-accent-green hover:text-white transition"
+            >
+              Catalogue produits
+            </Link>
+            <Link
+              to="/basket"
+              className="px-6 py-3 rounded-full border border-gray-200 text-gray-700 font-semibold hover:border-accent-green transition"
+            >
+              Mes paniers
+            </Link>
+            <Link
+              to="/scanner"
+              className="px-6 py-3 rounded-full bg-accent-green text-white font-semibold shadow hover:bg-emerald-600 transition"
+            >
+              Scanner un produit (beta)
+            </Link>
           </div>
         </section>
 

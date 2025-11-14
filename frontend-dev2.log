@@ -1,0 +1,9 @@
+
+> smartgrocery-frontend@1.0.0 dev
+> vite --port 5178
+
+
+  VITE v5.4.21  ready in 145 ms
+
+  ➜  Local:   http://localhost:5178/
+  ➜  Network: use --host to expose

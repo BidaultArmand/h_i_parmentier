@@ -1,0 +1,20 @@
+{
+  "name": "yuka-scanner-service",
+  "version": "0.1.0",
+  "description": "Standalone microservice that emulates Yuka-style product scanning and scoring.",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  }
+}

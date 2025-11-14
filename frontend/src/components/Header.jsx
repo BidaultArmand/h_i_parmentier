@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
-import { ShoppingCart, Package, Home, LogOut, User, MessageSquare } from 'lucide-react';
+import { ShoppingCart, Package, Home, LogOut, User, MessageSquare, ScanLine } from 'lucide-react';
 
 function Header() {
   const { user, signOut } = useAuth();
@@ -31,6 +31,13 @@ function Header() {
           >
             <Home className="h-4 w-4" />
             Home
+          </Link>
+          <Link
+            to="/scanner"
+            className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
+          >
+            <ScanLine className="h-4 w-4" />
+            Product Scanner
           </Link>
 
           {user ? (
