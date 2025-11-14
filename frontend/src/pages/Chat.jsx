@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
-import { Send, Bot, User, Loader2, Plus, Minus, Users, UtensilsCrossed, Sparkles, Check, X, ArrowLeft, Download } from 'lucide-react';
+import { Send, Bot, User, Loader2, Plus, Minus, Users, UtensilsCrossed, Sparkles, Check, X, ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import axios from 'axios';
@@ -17,7 +17,15 @@ function Chat() {
   const [numberOfMeals, setNumberOfMeals] = useState(7);
   const [numberOfPeople, setNumberOfPeople] = useState(2);
   const [keyPhrases, setKeyPhrases] = useState([]);
-  const [generatedRecipes, setGeneratedRecipes] = useState(null);
+  
+  // Recipe management
+  const [allGeneratedRecipes, setAllGeneratedRecipes] = useState([]); // Toutes les recettes générées
+  const [displayedRecipes, setDisplayedRecipes] = useState([]); // Recettes actuellement affichées
+  const [recipeStack, setRecipeStack] = useState([]); // Pile des recettes non encore utilisées
+  const [removedRecipes, setRemovedRecipes] = useState([]); // Historique des recettes supprimées (ne plus reproposer)
+  const [replacingRecipeIndex, setReplacingRecipeIndex] = useState(null); // Index de la recette en cours de remplacement
+  const [recipeImages, setRecipeImages] = useState({}); // Store generated images by recipe name
+  
   const [ingredientsData, setIngredientsData] = useState(null);
   const [currentStep, setCurrentStep] = useState('input'); // 'input', 'recipes', 'ingredients'
   const messagesEndRef = useRef(null);
@@ -101,17 +109,50 @@ function Chat() {
     setLoading(true);
 
     try {
+      // Demander plus de recettes que nécessaire (50% de plus pour avoir des remplaçants)
+      const recipesToGenerate = Math.ceil(numberOfMeals * 1.5);
+      
       // Call API to generate recipes based on context
       const response = await axios.post(`${API_URL}/chat/generate-recipes`, {
         keyPhrases,
-        numberOfMeals,
+        numberOfMeals: recipesToGenerate,
         numberOfPeople,
         userId: user?.id
       });
 
-      // Store generated recipes and move to recipes view
+      // Store all generated recipes
       const recipes = response.data.recipes || [];
-      setGeneratedRecipes(recipes);
+      setAllGeneratedRecipes(recipes);
+      
+      // Display only the requested number
+      const displayed = recipes.slice(0, numberOfMeals);
+      
+      // Initialize the stack with remaining recipes
+      const stack = recipes.slice(numberOfMeals);
+      setRecipeStack(stack);
+      
+      // Reset removed recipes
+      setRemovedRecipes([]);
+      
+      // Generate all images at once before showing the page
+      console.log('Generating images for all recipes...');
+      const imagesResponse = await axios.post(`${API_URL}/chat/generate-images`, {
+        recipes: recipes // Generate for ALL recipes (displayed + stack)
+      });
+      
+      // Store images in a map
+      const imagesMap = {};
+      if (imagesResponse.data.success) {
+        imagesResponse.data.images.forEach(img => {
+          if (img.success && img.imageUrl) {
+            imagesMap[img.recipeName] = img.imageUrl;
+          }
+        });
+      }
+      setRecipeImages(imagesMap);
+      
+      // Now display the recipes with images
+      setDisplayedRecipes(displayed);
       setCurrentStep('recipes');
 
     } catch (error) {
@@ -128,14 +169,14 @@ function Chat() {
   };
 
   const handleValidateRecipes = async () => {
-    if (loading || !generatedRecipes) return;
+    if (loading || !displayedRecipes || displayedRecipes.length === 0) return;
 
     setLoading(true);
 
     try {
-      // Call API to generate ingredient list JSON
+      // Call API to generate ingredient list JSON with DISPLAYED recipes only
       const response = await axios.post(`${API_URL}/chat/generate-ingredients`, {
-        recipes: generatedRecipes,
+        recipes: displayedRecipes,
         numberOfPeople
       });
 
@@ -160,12 +201,107 @@ function Chat() {
 
   const handleBackToInput = () => {
     setCurrentStep('input');
-    setGeneratedRecipes(null);
+    setDisplayedRecipes([]);
+    setAllGeneratedRecipes([]);
+    setRecipeStack([]);
+    setRemovedRecipes([]);
+    setRecipeImages({});
   };
 
   const handleBackToRecipes = () => {
     setCurrentStep('recipes');
     setIngredientsData(null);
+  };
+
+  // Replace a recipe with the next one from the stack
+  const handleReplaceRecipe = async (indexToReplace) => {
+    setReplacingRecipeIndex(indexToReplace);
+
+    try {
+      // Get the recipe being removed
+      const removedRecipe = displayedRecipes[indexToReplace];
+      
+      // Add it to the removed recipes list (won't be proposed again)
+      setRemovedRecipes(prev => [...prev, removedRecipe]);
+
+      // Check if we have recipes in the stack
+      if (recipeStack.length > 0) {
+        // Use the first recipe from the stack
+        const newRecipe = recipeStack[0];
+        
+        // Update displayed recipes
+        const newDisplayed = [...displayedRecipes];
+        newDisplayed[indexToReplace] = newRecipe;
+        setDisplayedRecipes(newDisplayed);
+        
+        // Remove the used recipe from the stack
+        setRecipeStack(prev => prev.slice(1));
+        
+        // Image should already be generated since we generated all at once
+        
+      } else {
+        // Stack is empty, need to generate more recipes
+        const response = await axios.post(`${API_URL}/chat/generate-recipes`, {
+          keyPhrases,
+          numberOfMeals: 5, // Generate 5 new recipes to refill the stack
+          numberOfPeople,
+          userId: user?.id
+        });
+
+        const newRecipes = response.data.recipes || [];
+        
+        if (newRecipes.length > 0) {
+          // Filter out recipes that have been removed
+          const availableNewRecipes = newRecipes.filter(
+            newRecipe => !removedRecipes.some(removed => removed.name === newRecipe.name) &&
+                         !displayedRecipes.some(displayed => displayed.name === newRecipe.name)
+          );
+          
+          if (availableNewRecipes.length > 0) {
+            // Generate images for new recipes
+            const imagesResponse = await axios.post(`${API_URL}/chat/generate-images`, {
+              recipes: availableNewRecipes
+            });
+            
+            // Store new images
+            if (imagesResponse.data.success) {
+              const newImagesMap = { ...recipeImages };
+              imagesResponse.data.images.forEach(img => {
+                if (img.success && img.imageUrl) {
+                  newImagesMap[img.recipeName] = img.imageUrl;
+                }
+              });
+              setRecipeImages(newImagesMap);
+            }
+            
+            // Use the first new recipe for replacement
+            const newDisplayed = [...displayedRecipes];
+            newDisplayed[indexToReplace] = availableNewRecipes[0];
+            setDisplayedRecipes(newDisplayed);
+            
+            // Add remaining new recipes to the stack
+            const newStack = availableNewRecipes.slice(1);
+            setRecipeStack(prev => [...prev, ...newStack]);
+            
+            // Add new recipes to all generated recipes
+            setAllGeneratedRecipes(prev => [...prev, ...availableNewRecipes]);
+          } else {
+            // Très rare : toutes les nouvelles recettes ont déjà été proposées
+            console.warn('All new recipes were already proposed');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Replace recipe error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Désolé, erreur lors du remplacement de la recette.',
+        timestamp: new Date(),
+        error: true
+      }]);
+    } finally {
+      setReplacingRecipeIndex(null);
+    }
   };
 
   const downloadJSON = () => {
@@ -411,32 +547,86 @@ function Chat() {
               <ArrowLeft className="h-4 w-4" />
               Modifier les préférences
             </Button>
-            <h2 className="text-2xl font-bold">Vos recettes ({generatedRecipes?.length || 0})</h2>
+            <h2 className="text-2xl font-bold">Vos recettes ({displayedRecipes?.length || 0})</h2>
             <div className="w-40" /> {/* Spacer for alignment */}
           </div>
 
           {/* Recipes Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {generatedRecipes?.map((recipe, idx) => (
-              <Card key={idx} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">{recipe.name}</CardTitle>
-                  <CardDescription className="text-xs">
-                    {recipe.cuisine} • {recipe.difficulty} • {recipe.prepTime}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{recipe.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {displayedRecipes?.map((recipe, idx) => {
+              const imageUrl = recipeImages[recipe.name];
+              
+              // Fallback gradient if no image
+              const firstLetter = recipe.name.charAt(0).toUpperCase();
+              const colors = [
+                'from-orange-400 to-red-500',
+                'from-green-400 to-emerald-500',
+                'from-blue-400 to-indigo-500',
+                'from-purple-400 to-pink-500',
+                'from-yellow-400 to-orange-500',
+                'from-teal-400 to-cyan-500',
+              ];
+              const colorClass = colors[idx % colors.length];
+              
+              return (
+                <Card key={idx} className="hover:shadow-lg transition-shadow relative group overflow-hidden">
+                  {/* Recipe Image */}
+                  <div className="relative h-48 w-full overflow-hidden bg-muted">
+                    {imageUrl ? (
+                      // DALL-E generated image
+                      <img 
+                        src={imageUrl}
+                        alt={recipe.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      // Fallback gradient if image generation failed
+                      <div className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+                        <div className="text-center text-white">
+                          <div className="text-6xl font-bold mb-2">{firstLetter}</div>
+                          <div className="text-sm font-medium px-4">{recipe.cuisine}</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Replace button overlay */}
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        onClick={() => handleReplaceRecipe(idx)}
+                        disabled={replacingRecipeIndex === idx}
+                        title="Remplacer cette recette"
+                      >
+                        {replacingRecipeIndex === idx ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">{recipe.name}</CardTitle>
+                    <CardDescription className="text-xs">
+                      {recipe.cuisine} • {recipe.difficulty} • {recipe.prepTime}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{recipe.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-3">
+          {/* Action Button - Centered */}
+          <div className="flex justify-center">
             <Button 
               onClick={handleValidateRecipes}
-              disabled={loading}
+              disabled={loading || !displayedRecipes || displayedRecipes.length === 0}
               size="lg"
               className="gap-2 px-8"
             >
@@ -448,19 +638,9 @@ function Chat() {
               ) : (
                 <>
                   <Check className="h-5 w-5" />
-                  Valider et générer la liste de courses
+                  Valider les recettes
                 </>
               )}
-            </Button>
-            <Button 
-              onClick={handleBackToInput}
-              disabled={loading}
-              variant="outline"
-              size="lg"
-              className="gap-2 px-8"
-            >
-              <X className="h-5 w-5" />
-              Régénérer
             </Button>
           </div>
 
