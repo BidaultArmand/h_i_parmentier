@@ -7,110 +7,35 @@
 [33m[nodemon] watching path(s): *.*[39m
 [33m[nodemon] watching extensions: js,mjs,cjs,json[39m
 [32m[nodemon] starting `node src/server.js`[39m
-file:///root/projects/hiparmentier/h_i_parmentier/backend/node_modules/openai/client.mjs:89
-            throw new Errors.OpenAIError('Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.');
-                  ^
-
-OpenAIError: Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
-    at new OpenAI (file:///root/projects/hiparmentier/h_i_parmentier/backend/node_modules/openai/client.mjs:89:19)
-    at file:///root/projects/hiparmentier/h_i_parmentier/backend/src/controllers/chatController.js:4:16
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
-
-Node.js v20.19.5
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `node src/server.js`[39m
 ⚠️  OpenAI API key not configured. Chat features will be disabled.
-node:events:502
+node:events:486
       throw er; // Unhandled 'error' event
       ^
 
-Error: listen EADDRINUSE: address already in use :::5000
-    at Serv[32m[nodemon] restarting due to changes...[39m
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (/Users/camillechantepie/Desktop/X-HEC Entrepreneurs/AI in prod/h_i_parmentier/backend/node_modules/express/lib/application.js:635:24)
+    at file:///Users/camillechantepie/Desktop/X-HEC%20Entrepreneurs/AI%20in%20prod/h_i_parmentier/backend/src/server.js:8:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:691:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.11.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting child process[39m
 [32m[nodemon] starting `node src/server.js`[39m
-⚠️  OpenAI API key not configured. Chat features will be disabled.
-node:events:502
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use :::5000
-    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
-    at listenInCluster (node:net:1965:12)
-    at Server.listen (node:net:2067:7)
-    at Function.listen (/root/projects/hiparmentier/h_i_parmentier/backend/node_modules/express/lib/application.js:635:24)
-    at file:///root/projects/hiparmentier/h_i_parmentier/backend/src/server.js:8:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1944:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 5000
-}
-
-Node.js v20.19.5
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
-er.setupListenHandle [as _listen2] (node:net:1908:16)
-    at listenInCluster (node:net:1965:12)
-    at Server.listen (node:net:2067:7)
-    at Function.listen (/root/projects/hiparmentier/h_i_parmentier/backend/node_modules/express/lib/application.js:635:24)
-    at file:///root/projects/hiparmentier/h_i_parmentier/backend/src/server.js:8:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1944:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 5000
-}
-
-Node.js v20.19.5
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
-ernal/process/task_queues:82:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 5000
-}
-
-Node.js v20.19.5
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `node src/server.js`[39m
-⚠️  OpenAI API key not configured. Chat features will be disabled.
-node:events:502
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use :::5000
-    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
-    at listenInCluster (node:net:1965:12)
-    at Server.listen (node:net:2067:7)
-    at Function.listen (/root/projects/hiparmentier/h_i_parmentier/backend/node_modules/express/lib/application.js:635:24)
-    at file:///root/projects/hiparmentier/h_i_parmentier/backend/src/server.js:8:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1944:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 5000
-}
-
-Node.js v20.19.5
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+🚀 Server is running on port 5001
+📡 API available at http://localhost:5001/api
+🏥 Health check: http://localhost:5001/api/health
