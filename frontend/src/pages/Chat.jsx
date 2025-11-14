@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
-import { Send, Bot, User, Loader2, Plus, Minus, Users, UtensilsCrossed, Sparkles, Check, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, Plus, Minus, Users, UtensilsCrossed, Sparkles, Check, X, ArrowLeft, Download } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 function Chat() {
   const { user } = useAuth();
@@ -17,6 +18,8 @@ function Chat() {
   const [numberOfPeople, setNumberOfPeople] = useState(2);
   const [keyPhrases, setKeyPhrases] = useState([]);
   const [generatedRecipes, setGeneratedRecipes] = useState(null);
+  const [ingredientsData, setIngredientsData] = useState(null);
+  const [currentStep, setCurrentStep] = useState('input'); // 'input', 'recipes', 'ingredients'
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -106,17 +109,10 @@ function Chat() {
         userId: user?.id
       });
 
-      // Store generated recipes
+      // Store generated recipes and move to recipes view
       const recipes = response.data.recipes || [];
       setGeneratedRecipes(recipes);
-
-      // Show recipes as cards in the chat
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Voici ${recipes.length} recettes pour vous :`,
-        recipes: recipes,
-        timestamp: new Date()
-      }]);
+      setCurrentStep('recipes');
 
     } catch (error) {
       console.error('Generate recipes error:', error);
@@ -145,13 +141,9 @@ function Chat() {
 
       const ingredientsJSON = response.data.ingredients;
 
-      // Show confirmation with ingredients
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Liste de courses générée avec succès !',
-        ingredientsJSON: ingredientsJSON,
-        timestamp: new Date()
-      }]);
+      // Store ingredients and move to ingredients view
+      setIngredientsData(ingredientsJSON);
+      setCurrentStep('ingredients');
 
     } catch (error) {
       console.error('Generate ingredients error:', error);
@@ -166,9 +158,32 @@ function Chat() {
     }
   };
 
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted/20 py-8">
-      <div className="container max-w-3xl px-4">
+  const handleBackToInput = () => {
+    setCurrentStep('input');
+    setGeneratedRecipes(null);
+  };
+
+  const handleBackToRecipes = () => {
+    setCurrentStep('recipes');
+    setIngredientsData(null);
+  };
+
+  const downloadJSON = () => {
+    const dataStr = JSON.stringify(ingredientsData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'liste-courses.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // STEP 1: Input page
+  if (currentStep === 'input') {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted/20 py-8">
+        <div className="container max-w-3xl px-4">
         
         {/* Configuration Section - Compact */}
         <div className="mb-6 flex justify-center gap-6">
@@ -353,11 +368,74 @@ function Chat() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex justify-center gap-3">
-          {!generatedRecipes ? (
+        {/* Generate Button */}
+        <div className="mt-6 flex justify-center">
+          <Button 
+            onClick={handleGenerateRecipes}
+            disabled={loading}
+            size="lg"
+            className="gap-2 px-8"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Génération en cours...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5" />
+                Générer mes recettes
+              </>
+            )}
+          </Button>
+        </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // STEP 2: Recipes page
+  if (currentStep === 'recipes') {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-background to-muted/20 py-8">
+        <div className="container max-w-6xl px-4">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Button
+              variant="ghost"
+              onClick={handleBackToInput}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Modifier les préférences
+            </Button>
+            <h2 className="text-2xl font-bold">Vos recettes ({generatedRecipes?.length || 0})</h2>
+            <div className="w-40" /> {/* Spacer for alignment */}
+          </div>
+
+          {/* Recipes Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {generatedRecipes?.map((recipe, idx) => (
+              <Card key={idx} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">{recipe.name}</CardTitle>
+                  <CardDescription className="text-xs">
+                    {recipe.cuisine} • {recipe.difficulty} • {recipe.prepTime}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{recipe.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-3">
             <Button 
-              onClick={handleGenerateRecipes}
+              onClick={handleValidateRecipes}
               disabled={loading}
               size="lg"
               className="gap-2 px-8"
@@ -365,52 +443,122 @@ function Chat() {
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Génération en cours...
+                  Génération de la liste...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-5 w-5" />
-                  Générer mes recettes
+                  <Check className="h-5 w-5" />
+                  Valider et générer la liste de courses
                 </>
               )}
             </Button>
-          ) : (
-            <>
-              <Button 
-                onClick={handleValidateRecipes}
-                disabled={loading}
-                size="lg"
-                className="gap-2 px-8"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Validation...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-5 w-5" />
-                    Valider les recettes
-                  </>
-                )}
-              </Button>
-              <Button 
-                onClick={() => setGeneratedRecipes(null)}
-                disabled={loading}
-                variant="outline"
-                size="lg"
-                className="gap-2 px-8"
-              >
-                <X className="h-5 w-5" />
-                Régénérer
-              </Button>
-            </>
-          )}
-        </div>
+            <Button 
+              onClick={handleBackToInput}
+              disabled={loading}
+              variant="outline"
+              size="lg"
+              className="gap-2 px-8"
+            >
+              <X className="h-5 w-5" />
+              Régénérer
+            </Button>
+          </div>
 
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // STEP 3: Ingredients page
+  if (currentStep === 'ingredients') {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-background to-muted/20 py-8">
+        <div className="container max-w-4xl px-4">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Button
+              variant="ghost"
+              onClick={handleBackToRecipes}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour aux recettes
+            </Button>
+            <h2 className="text-2xl font-bold">Liste de courses</h2>
+            <Button
+              variant="outline"
+              onClick={downloadJSON}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Télécharger JSON
+            </Button>
+          </div>
+
+          {/* Shopping List */}
+          {ingredientsData?.shoppingList && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Ingrédients à acheter</CardTitle>
+                <CardDescription>
+                  Liste consolidée pour {numberOfPeople} personne{numberOfPeople > 1 ? 's' : ''}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(
+                    ingredientsData.shoppingList.reduce((acc, item) => {
+                      if (!acc[item.category]) acc[item.category] = [];
+                      acc[item.category].push(item);
+                      return acc;
+                    }, {})
+                  ).map(([category, items]) => (
+                    <div key={category}>
+                      <h3 className="font-semibold text-sm mb-2 text-primary">{category}</h3>
+                      <ul className="space-y-1 ml-4">
+                        {items.map((item, idx) => (
+                          <li key={idx} className="text-sm flex justify-between">
+                            <span>{item.name}</span>
+                            <span className="text-muted-foreground">{item.totalQuantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recipes Detail */}
+          {ingredientsData?.recipes && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold mb-4">Détail par recette</h3>
+              {ingredientsData.recipes.map((recipe, idx) => (
+                <Card key={idx}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{recipe.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1">
+                      {recipe.ingredients?.map((ing, ingIdx) => (
+                        <li key={ingIdx} className="text-sm flex justify-between">
+                          <span>{ing.name}</span>
+                          <span className="text-muted-foreground">{ing.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+        </div>
+      </div>
+    );
+  }
 }
 
 export default Chat;
