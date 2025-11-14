@@ -39,3 +39,4 @@ Node.js v24.11.0
 🚀 Server is running on port 5001
 📡 API available at http://localhost:5001/api
 🏥 Health check: http://localhost:5001/api/health
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
