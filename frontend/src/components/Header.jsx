@@ -36,34 +36,20 @@ function Header() {
           {user ? (
             <>
               <Link
-                to="/chat"
+                to="/profile"
                 className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
               >
-                <MessageSquare className="h-4 w-4" />
-                AI Assistant
+                <User className="h-4 w-4" />
+                Mon Profil
               </Link>
-              <Link
-                to="/products"
-                className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="p-2 rounded-md border-2 border-red-500 hover:bg-red-50"
               >
-                <Package className="h-4 w-4" />
-                Products
-              </Link>
-              <div className="flex items-center gap-3 ml-2 pl-3 border-l">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{user.email}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSignOut}
-                  className="gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </Button>
-              </div>
+                <LogOut className="h-4 w-4 text-red-500" />
+              </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">

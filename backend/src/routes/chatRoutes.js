@@ -1,5 +1,12 @@
 import express from 'express';
-import { chat, createBasketFromChat } from '../controllers/chatController.js';
+import { 
+  chat, 
+  createBasketFromChat, 
+  summarizePreferences, 
+  generateRecipes, 
+  generateIngredients,
+  generateRecipeImages
+} from '../controllers/chatController.js';
 
 const router = express.Router();
 
@@ -8,5 +15,17 @@ router.post('/', chat);
 
 // POST /api/chat/create-basket - Create basket from chat suggestions
 router.post('/create-basket', createBasketFromChat);
+
+// POST /api/chat/summarize - Summarize user preferences into key phrases
+router.post('/summarize', summarizePreferences);
+
+// POST /api/chat/generate-recipes - Generate recipes based on context
+router.post('/generate-recipes', generateRecipes);
+
+// POST /api/chat/generate-ingredients - Generate ingredients JSON from recipes
+router.post('/generate-ingredients', generateIngredients);
+
+// POST /api/chat/generate-images - Generate recipe images with DALL-E
+router.post('/generate-images', generateRecipeImages);
 
 export default router;

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@h-company/agp-sdk-js": "^0.2.2-alpha.3"
+  }
+}

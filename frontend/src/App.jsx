@@ -4,10 +4,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Chat from './pages/Chat';
-import Products from './pages/Products';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import LandingPageDev from './pages/LandingPageDev';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -29,10 +29,10 @@ function App() {
               }
             />
             <Route
-              path="/products"
+              path="/profile"
               element={
                 <ProtectedRoute>
-                  <Products />
+                  <Profile />
                 </ProtectedRoute>
               }
             />
