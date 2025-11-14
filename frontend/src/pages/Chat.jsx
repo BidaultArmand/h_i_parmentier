@@ -1,204 +1,128 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { basketAPI } from '../services/api';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent } from '../components/ui/card';
-import { Send, Bot, User, Loader2, ShoppingCart, Plus, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Plus, Minus, Users, UtensilsCrossed, Sparkles, Check, X } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 function Chat() {
   const { user } = useAuth();
-  const [baskets, setBaskets] = useState([]);
-  const [selectedBasketId, setSelectedBasketId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingBaskets, setLoadingBaskets] = useState(true);
   const [conversationHistory, setConversationHistory] = useState([]);
+  const [numberOfMeals, setNumberOfMeals] = useState(7);
+  const [numberOfPeople, setNumberOfPeople] = useState(2);
+  const [keyPhrases, setKeyPhrases] = useState([]);
+  const [generatedRecipes, setGeneratedRecipes] = useState(null);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
-    if (user) {
-      fetchBaskets();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    // Reset messages when basket changes
-    if (selectedBasketId) {
-      initializeChatForBasket(selectedBasketId);
-    } else {
-      // Initialize empty chat if no basket is selected
-      initializeEmptyChat();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBasketId]);
-
-  const fetchBaskets = async () => {
-    try {
-      setLoadingBaskets(true);
-      const response = await basketAPI.getAll(user.id);
-      setBaskets(response.data.data || []);
-      // Auto-select first basket if available
-      if (response.data.data && response.data.data.length > 0 && !selectedBasketId) {
-        setSelectedBasketId(response.data.data[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching baskets:', error);
-    } finally {
-      setLoadingBaskets(false);
-    }
-  };
-
-  const initializeChatForBasket = async (basketId) => {
-    try {
-      // Fetch basket details
-      const basketResponse = await basketAPI.get(basketId);
-      const basket = basketResponse.data.data;
-      
-      // Set welcome message with basket context
-      setMessages([{
-        role: 'assistant',
-        content: `Hello! I'm your Smart Grocery assistant. You're currently working with the basket "${basket.basket.name}". 
-
-I can help you:
-• Add products to this basket
-• Optimize your shopping list
-• Compare prices across stores
-• Suggest sustainable alternatives
-
-What would you like to do with this basket?`,
-        timestamp: new Date()
-      }]);
-      setConversationHistory([]);
-    } catch (error) {
-      console.error('Error initializing chat for basket:', error);
-      setMessages([{
-        role: 'assistant',
-        content: 'Sorry, I encountered an error loading the basket. Please try again.',
-        timestamp: new Date(),
-        error: true
-      }]);
-    }
-  };
-
-  const initializeEmptyChat = () => {
-    setMessages([{
-      role: 'assistant',
-      content: `Hello! I'm your Smart Grocery assistant. I can help you:
-
-• Create a new shopping basket based on your needs
-• Add products to an existing basket
-• Suggest products based on your preferences
-
-Select a basket from the sidebar or create a new one to get started!`,
-      timestamp: new Date()
-    }]);
-    setConversationHistory([]);
-  };
-
-  const handleCreateNewBasket = async () => {
-    try {
-      setLoading(true);
-      const response = await basketAPI.create({
-        name: `Basket ${new Date().toLocaleDateString()}`,
-        userId: user.id
-      });
-      
-      const newBasket = response.data.data;
-      setBaskets(prev => [newBasket, ...prev]);
-      setSelectedBasketId(newBasket.id);
-    } catch (error) {
-      console.error('Error creating basket:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, I had trouble creating the basket. Please try again.',
-        timestamp: new Date(),
-        error: true
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteBasket = async (basketId, e) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this basket?')) return;
-    
-    try {
-      await basketAPI.delete(basketId);
-      // Update baskets state and handle selection
-      setBaskets(prev => {
-        const remaining = prev.filter(b => b.id !== basketId);
-        // If we deleted the selected basket, select the first remaining or null
-        if (selectedBasketId === basketId) {
-          setSelectedBasketId(remaining.length > 0 ? remaining[0].id : null);
-        }
-        return remaining;
-      });
-    } catch (error) {
-      console.error('Error deleting basket:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, I had trouble deleting the basket. Please try again.',
-        timestamp: new Date(),
-        error: true
-      }]);
-    }
-  };
+    // Initialize with empty messages - no welcome message
+    setMessages([]);
+  }, []);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
     if (!input.trim() || loading) return;
 
-    const userMessage = {
-      role: 'user',
-      content: input,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    setLoading(true);
+    const userInput = input;
     setInput('');
+
+    try {
+      // Call API to summarize text into key phrases
+      const response = await axios.post(`${API_URL}/chat/summarize`, {
+        text: userInput
+      });
+
+      // Add the key phrases to the context
+      const newPhrases = response.data.keyPhrases || [];
+      setKeyPhrases(prev => [...prev, ...newPhrases]);
+
+      // Show user message with the original text
+      setMessages(prev => [...prev, {
+        role: 'user',
+        content: userInput,
+        timestamp: new Date()
+      }]);
+
+      // Show assistant confirmation with key phrases
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'J\'ai noté vos préférences :',
+        keyPhrases: newPhrases,
+        timestamp: new Date()
+      }]);
+
+    } catch (error) {
+      console.error('Summarize error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Désolé, j\'ai rencontré une erreur lors de l\'analyse de vos préférences.',
+        timestamp: new Date(),
+        error: true
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateRecipes = async () => {
+    if (loading) return;
+
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/chat`, {
-        message: input,
-        conversationHistory,
-        basketId: selectedBasketId
+      // Call API to generate recipes based on context
+      const response = await axios.post(`${API_URL}/chat/generate-recipes`, {
+        keyPhrases,
+        numberOfMeals,
+        numberOfPeople,
+        userId: user?.id
       });
 
-      const assistantMessage = {
-        role: 'assistant',
-        content: response.data.message,
-        action: response.data.action,
-        timestamp: new Date()
-      };
+      // Store generated recipes
+      const recipes = response.data.recipes || [];
+      setGeneratedRecipes(recipes);
 
-      setMessages(prev => [...prev, assistantMessage]);
-      setConversationHistory(response.data.conversationHistory);
-      
-      // Refresh baskets if a new one was created
-      if (response.data.action?.action === 'create_basket') {
-        fetchBaskets();
-      }
-    } catch (error) {
-      console.error('Chat error:', error);
+      // Show recipes as cards in the chat
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Voici ${recipes.length} recettes pour vous :`,
+        recipes: recipes,
+        timestamp: new Date()
+      }]);
+
+    } catch (error) {
+      console.error('Generate recipes error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Désolé, j\'ai rencontré une erreur lors de la génération des recettes.',
         timestamp: new Date(),
         error: true
       }]);
@@ -207,148 +131,129 @@ Select a basket from the sidebar or create a new one to get started!`,
     }
   };
 
-  const handleCreateBasket = async (action) => {
+  const handleValidateRecipes = async () => {
+    if (loading || !generatedRecipes) return;
+
+    setLoading(true);
+
     try {
-      setLoading(true);
-
-      const response = await axios.post(`${API_URL}/chat/create-basket`, {
-        userId: user.id,
-        basketName: action.basketName || 'AI Shopping List',
-        products: action.products
+      // Call API to generate ingredient list JSON
+      const response = await axios.post(`${API_URL}/chat/generate-ingredients`, {
+        recipes: generatedRecipes,
+        numberOfPeople
       });
 
-      // Refresh baskets
-      await fetchBaskets();
-      
-      // Select the new basket
-      if (response.data.data?.basket) {
-        setSelectedBasketId(response.data.data.basket.id);
-      }
+      const ingredientsJSON = response.data.ingredients;
 
+      // Show confirmation with ingredients
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `✅ Great! I've created your basket "${action.basketName || 'AI Shopping List'}" with ${action.products.length} products.`,
+        content: 'Liste de courses générée avec succès !',
+        ingredientsJSON: ingredientsJSON,
         timestamp: new Date()
       }]);
+
     } catch (error) {
-      console.error('Create basket error:', error);
+      console.error('Generate ingredients error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I had trouble creating the basket. Please try again.',
+        content: 'Désolé, j\'ai rencontré une erreur lors de la génération de la liste de courses.',
         timestamp: new Date(),
         error: true
       }]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
     }
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
-      {/* Sidebar */}
-      <div className="w-64 border-r bg-muted/30 flex flex-col overflow-hidden">
-        <div className="p-4 border-b">
-          <Button
-            onClick={handleCreateNewBasket}
-            className="w-full gap-2"
-            disabled={loading}
-          >
-            <Plus className="h-4 w-4" />
-            New Basket
-          </Button>
-        </div>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted/20 py-8">
+      <div className="container max-w-3xl px-4">
         
-        <div className="flex-1 overflow-y-auto p-2">
-          {loadingBaskets ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : baskets.length === 0 ? (
-            <div className="text-center p-8 text-sm text-muted-foreground">
-              No baskets yet. Create one to get started!
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {baskets.map((basket) => (
-                <div
-                  key={basket.id}
-                  onClick={() => setSelectedBasketId(basket.id)}
-                  className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedBasketId === basket.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-medium truncate ${
-                        selectedBasketId === basket.id ? 'text-primary-foreground' : ''
-                      }`}>
-                        {basket.name}
-                      </div>
-                      <div className={`text-xs mt-1 ${
-                        selectedBasketId === basket.id 
-                          ? 'text-primary-foreground/70' 
-                          : 'text-muted-foreground'
-                      }`}>
-                        {formatDate(basket.created_at)}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${
-                        selectedBasketId === basket.id 
-                          ? 'hover:bg-primary-foreground/20 text-primary-foreground' 
-                          : ''
-                      }`}
-                      onClick={(e) => handleDeleteBasket(basket.id, e)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        {/* Configuration Section - Compact */}
+        <div className="mb-6 flex justify-center gap-6">
+          {/* Number of Meals */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-card border rounded-lg">
+            <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setNumberOfMeals(Math.max(1, numberOfMeals - 1))}
+              disabled={numberOfMeals <= 1}
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <span className="text-2xl font-bold min-w-[2.5rem] text-center">
+              {numberOfMeals}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setNumberOfMeals(Math.min(21, numberOfMeals + 1))}
+              disabled={numberOfMeals >= 21}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+            <span className="text-xs text-muted-foreground">repas</span>
+          </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-hidden flex flex-col p-6">
+          {/* Number of People */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-card border rounded-lg">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setNumberOfPeople(Math.max(1, numberOfPeople - 1))}
+              disabled={numberOfPeople <= 1}
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <span className="text-2xl font-bold min-w-[2.5rem] text-center">
+              {numberOfPeople}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setNumberOfPeople(Math.min(20, numberOfPeople + 1))}
+              disabled={numberOfPeople >= 20}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+            <span className="text-xs text-muted-foreground">pers.</span>
+          </div>
+        </div>
+
+        {/* Chat Area - Compact */}
+        <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-xl overflow-hidden flex flex-col" style={{ height: '180px' }}>
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {messages.length === 0 && !loading && (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-xs text-muted-foreground text-center max-w-md">
+                  Décrivez vos préférences culinaires pour générer vos recettes de la semaine
+                </p>
+              </div>
+            )}
+            
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex gap-3 ${
+                className={`flex gap-2 ${
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Bot className="h-5 w-5 text-primary" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : message.error
@@ -356,51 +261,55 @@ Select a basket from the sidebar or create a new one to get started!`,
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  
+                  {/* Key Phrases */}
+                  {message.keyPhrases && message.keyPhrases.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.keyPhrases.map((phrase, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {phrase}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
 
-                  {/* Action buttons */}
-                  {message.action && message.action.action === 'suggest_products' && (
-                    <div className="mt-3 pt-3 border-t space-y-2">
-                      <p className="text-xs font-medium mb-2">Suggested products:</p>
-                      {message.action.products.map((product, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs bg-background/50 rounded p-2"
-                        >
-                          <span className="font-medium">{product.name}</span>
-                          {product.quantity > 1 && (
-                            <span className="ml-2 text-muted-foreground">
-                              x{product.quantity}
-                            </span>
-                          )}
+                  {/* Recipe Cards */}
+                  {message.recipes && message.recipes.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      {message.recipes.map((recipe, idx) => (
+                        <div key={idx} className="bg-background border rounded-lg p-3 text-left">
+                          <h4 className="font-semibold text-sm text-foreground">{recipe.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">{recipe.description}</p>
                         </div>
                       ))}
-                      <Button
-                        size="sm"
-                        className="w-full mt-2 gap-2"
-                        onClick={() => handleCreateBasket(message.action)}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        Create Basket with These Products
-                      </Button>
+                    </div>
+                  )}
+
+                  {/* Ingredients JSON Preview */}
+                  {message.ingredientsJSON && (
+                    <div className="mt-3 p-3 bg-background border rounded-lg">
+                      <p className="text-xs font-mono text-foreground whitespace-pre-wrap">
+                        {JSON.stringify(message.ingredientsJSON, null, 2)}
+                      </p>
                     </div>
                   )}
                 </div>
 
                 {message.role === 'user' && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-                    <User className="h-5 w-5 text-secondary-foreground" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary">
+                    <User className="h-4 w-4 text-secondary-foreground" />
                   </div>
                 )}
               </div>
             ))}
 
             {loading && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Bot className="h-5 w-5 text-primary" />
+              <div className="flex gap-2 justify-start">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="h-4 w-4 text-primary" />
                 </div>
-                <div className="bg-muted rounded-lg px-4 py-3">
+                <div className="bg-muted rounded-2xl px-4 py-2.5">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
@@ -410,16 +319,30 @@ Select a basket from the sidebar or create a new one to get started!`,
           </div>
 
           {/* Input */}
-          <div className="border-t pt-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
+          <div className="border-t p-3 bg-background/50">
+            <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
+              <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={selectedBasketId ? "Type your message... (e.g., 'Add milk to this basket')" : "Type your message... (e.g., 'I need ingredients for pasta dinner')"}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
+                placeholder="Ex: Plats méditerranéens avec produits de saison"
                 disabled={loading}
-                className="flex-1"
+                rows={2}
+                className="flex-1 resize-none border border-primary/20 rounded-xl px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50 bg-background"
+                style={{ minHeight: '48px', maxHeight: '120px' }}
               />
-              <Button type="submit" disabled={loading || !input.trim()} className="gap-2">
+              <Button 
+                type="submit" 
+                disabled={loading || !input.trim()} 
+                size="icon"
+                className="rounded-xl h-10 w-10 shrink-0"
+              >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -429,6 +352,62 @@ Select a basket from the sidebar or create a new one to get started!`,
             </form>
           </div>
         </div>
+
+        {/* Action Buttons */}
+        <div className="mt-6 flex justify-center gap-3">
+          {!generatedRecipes ? (
+            <Button 
+              onClick={handleGenerateRecipes}
+              disabled={loading}
+              size="lg"
+              className="gap-2 px-8"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Génération en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5" />
+                  Générer mes recettes
+                </>
+              )}
+            </Button>
+          ) : (
+            <>
+              <Button 
+                onClick={handleValidateRecipes}
+                disabled={loading}
+                size="lg"
+                className="gap-2 px-8"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Validation...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-5 w-5" />
+                    Valider les recettes
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => setGeneratedRecipes(null)}
+                disabled={loading}
+                variant="outline"
+                size="lg"
+                className="gap-2 px-8"
+              >
+                <X className="h-5 w-5" />
+                Régénérer
+              </Button>
+            </>
+          )}
+        </div>
+
       </div>
     </div>
   );
