@@ -40,3 +40,8 @@ Node.js v24.11.0
 📡 API available at http://localhost:5001/api
 🏥 Health check: http://localhost:5001/api/health
 [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+🚀 Server is running on port 5001
+📡 API available at http://localhost:5001/api
+🏥 Health check: http://localhost:5001/api/health

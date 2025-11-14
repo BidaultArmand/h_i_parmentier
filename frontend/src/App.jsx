@@ -4,7 +4,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Chat from './pages/Chat';
-import Products from './pages/Products';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import LandingPageDev from './pages/LandingPageDev';
@@ -26,14 +25,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Chat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute>
-                  <Products />
                 </ProtectedRoute>
               }
             />
