@@ -4,7 +4,8 @@ import {
   createBasketFromChat, 
   summarizePreferences, 
   generateRecipes, 
-  generateIngredients 
+  generateIngredients,
+  generateRecipeImages
 } from '../controllers/chatController.js';
 
 const router = express.Router();
@@ -23,5 +24,8 @@ router.post('/generate-recipes', generateRecipes);
 
 // POST /api/chat/generate-ingredients - Generate ingredients JSON from recipes
 router.post('/generate-ingredients', generateIngredients);
+
+// POST /api/chat/generate-images - Generate recipe images with DALL-E
+router.post('/generate-images', generateRecipeImages);
 
 export default router;
