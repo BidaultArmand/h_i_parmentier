@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 import { MemoryCache } from './cache/memoryCache.js';
@@ -17,6 +18,7 @@ const scanSchema = z.object({
   barcode: z.string().min(8).max(20),
 });
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {

@@ -195,9 +195,9 @@ export default function ProductScanner() {
         <section className="rounded-2xl border bg-white/70 p-6 shadow">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              {result.product.imageUrl && (
+              {result.product.images?.front && (
                 <img
-                  src={result.product.imageUrl}
+                  src={result.product.images.front}
                   alt={result.product.name || 'Produit'}
                   className="h-20 w-20 rounded-xl object-cover border shadow-sm"
                 />

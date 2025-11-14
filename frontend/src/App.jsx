@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import LandingPageDev from './pages/LandingPageDev';
 import Profile from './pages/Profile';
+import ProductScanner from './pages/ProductScanner';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/landing-dev" element={<LandingPageDev />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/scanner" element={<ProductScanner />} />
             <Route
               path="/chat"
               element={
