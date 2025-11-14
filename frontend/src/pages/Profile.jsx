@@ -132,6 +132,11 @@ const Profile = () => {
         <p className="text-gray-600">
           Personnalisez vos préférences pour des recommandations adaptées à vos besoins.
         </p>
+        {user?.email && (
+          <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+            <span className="font-medium">Email:</span> {user.email}
+          </p>
+        )}
       </div>
 
       {message.text && (
