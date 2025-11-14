@@ -5,7 +5,6 @@ import productRoutes from './routes/productRoutes.js';
 import basketRoutes from './routes/basketRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
-import agpRoutes from './routes/agpRoutes.js';
 
 dotenv.config();
 
@@ -34,7 +33,6 @@ app.use('/api/products', productRoutes);
 app.use('/api/basket', basketRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/agp', agpRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --background: 40 20% 97%;
+    --foreground: 0 0% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 0 0% 10%;
     --primary: 173 73% 29%;
     --primary-foreground: 0 0% 100%;
     --secondary: 142 53% 79%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 40 15% 94%;
+    --muted-foreground: 0 0% 45%;
     --accent: 142 53% 79%;
-    --accent-foreground: 0 0% 0%;
+    --accent-foreground: 0 0% 10%;
     --destructive: 0 73% 58%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 88%;
+    --input: 0 0% 92%;
     --ring: 173 73% 29%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -54,7 +54,9 @@
     border-color: hsl(var(--border));
   }
   body {
-    background-color: hsl(var(--background));
+    background: linear-gradient(135deg, #f5f1e8 0%, #ede8dc 25%, #f8f5ed 50%, #ede8dc 75%, #f5f1e8 100%);
+    background-attachment: fixed;
+    position: relative;
     color: hsl(var(--foreground));
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -62,4 +64,98 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* Subtle texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(210, 180, 140, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(222, 184, 135, 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(245, 222, 179, 0.1) 0%, transparent 40%);
+  }
+  
+  /* Decorative corner elements */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(135deg, rgba(222, 184, 135, 0.08) 0%, transparent 30%),
+      linear-gradient(225deg, rgba(210, 180, 140, 0.06) 0%, transparent 25%);
+  }
+  
+  /* Ensure content is above background */
+  #root {
+    position: relative;
+    z-index: 1;
+  }
 }
+
+/* Apple-style slider customization */
+@layer components {
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 999px;
+    outline: none;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+    transform: scale(1.1);
+  }
+  
+  input[type="range"]::-webkit-slider-thumb:active {
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3), 0 2px 6px rgba(37, 99, 235, 0.2);
+    transform: scale(1.15);
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+  }
+  
+  input[type="range"]::-moz-range-thumb:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+    transform: scale(1.1);
+  }
+  
+  input[type="range"]::-moz-range-thumb:active {
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3), 0 2px 6px rgba(37, 99, 235, 0.2);
+    transform: scale(1.15);
+  }
+}
+

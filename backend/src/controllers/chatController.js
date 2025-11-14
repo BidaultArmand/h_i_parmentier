@@ -1,7 +1,4 @@
 import dotenv from 'dotenv';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
 
@@ -17,30 +14,6 @@ if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-ap
 } else {
   console.warn('⚠️  OpenAI API key not configured. Chat features will be disabled.');
 }
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PRODUCT_SEARCH_PATH = path.resolve(__dirname, '../../data/product_to_search.json');
-
-const persistProductSuggestions = async (assistantMessage, actionData) => {
-  if (!actionData || actionData.action !== 'suggest_products') {
-    return;
-  }
-
-  const entry = {
-    timestamp: new Date().toISOString(),
-    response: assistantMessage,
-    products: actionData.products || [],
-    basketName: actionData.basketName || null,
-    basketId: actionData.basketId || null
-  };
-
-  try {
-    await fs.writeFile(PRODUCT_SEARCH_PATH, JSON.stringify(entry, null, 2));
-  } catch (fileError) {
-    console.error('Failed to persist suggest_products response:', fileError);
-  }
-};
 
 const SYSTEM_PROMPT = `You are a smart grocery shopping assistant. Help users create shopping lists and add products to their baskets.
 
@@ -83,22 +56,44 @@ INPUTS YOU WILL RECEIVE:
    - Organic Importance: Number 0-100 (preference for organic products)
    - Local Importance: Number 0-100 (preference for local/seasonal products)
 
-2. Current Request:
+2. Current Request (USER'S IMMEDIATE NEEDS - HIGHEST PRIORITY):
    - Number of Meals: How many different recipes to generate
    - Number of People: How many servings per recipe
    - User Text: Specific preferences or requests for this week (e.g., "plats méditerranéens", "recettes légères")
 
-YOUR TASK:
-Generate recipes that:
-- STRICTLY respect Dietary Restrictions (these are non-negotiable)
-- NEVER include Excluded Foods (check all ingredients carefully)
-- Match Recipe Preferences when possible
-- Align with Culinary Goals (e.g., quick recipes if "Gagner du temps", budget recipes if "Faire des économies")
-- Consider Price Preference (low value = simple ingredients, high value = premium ingredients)
-- If Nutriscore Importance is high (>70), focus on healthy, balanced recipes
-- If Organic Importance is high (>70), mention organic ingredients in descriptions
-- If Local Importance is high (>70), prioritize seasonal and local products
-- Incorporate the User Text preferences prominently
+CONSTRAINT HIERARCHY (PRIORITY ORDER):
+
+🔴 LEVEL 1 - ABSOLUTE RESTRICTIONS (NEVER VIOLATE):
+   - Dietary Restrictions from profile: These are NON-NEGOTIABLE health/ethical requirements (e.g., vegetarian, vegan, gluten-free, allergies)
+   - Excluded Foods from profile: These are FORBIDDEN ingredients that must NEVER appear in any recipe
+   - Extreme slider values: Price at 0 = use only very cheap ingredients, Price at 100 = only premium ingredients
+   - Extreme slider values: Nutriscore at 100 = only A/B nutriscore recipes, Nutriscore at 0 = ignore nutrition
+   
+   ⚠️ CRITICAL: If User Text conflicts with Level 1 restrictions, ADAPT the request to respect the restriction.
+   Example: User is vegetarian + asks for "spaghetti bolognese" → Generate "Spaghetti Bolognese Végétarienne" with lentils/soy
+
+🟡 LEVEL 2 - STRONG PREFERENCES (PRIORITIZE):
+   - User Text from current request: This reflects the user's IMMEDIATE desire for THIS WEEK
+   - This takes precedence over general profile preferences
+   - Be creative to satisfy this request while respecting Level 1 restrictions
+   
+🟢 LEVEL 3 - BACKGROUND PREFERENCES (GUIDE):
+   - Recipe Preferences from profile: General styles to favor (e.g., "Rapide", "Cuisine du monde")
+   - Culinary Goals from profile: Overall motivations (e.g., "Faire des économies", "Manger équilibré")
+   - Moderate slider values (30-70): Use as general guidance
+   - Organic/Local importance: Mention in descriptions when high (>70)
+
+DECISION LOGIC:
+1. Start with User Text (Level 2) as the primary inspiration
+2. Check Level 1 restrictions and modify the recipe if needed to comply
+3. Use Level 3 preferences to refine choices when Level 2 is ambiguous
+4. If User Text is vague/empty, rely more heavily on Level 3 preferences
+
+EXAMPLES:
+- User is vegetarian (Level 1) + wants "burger" (Level 2) → "Burger Végétarien au Steak de Haricots Noirs"
+- User excludes "poisson" (Level 1) + wants "cuisine méditerranéenne" (Level 2) → Focus on légumes grillés, pâtes, couscous
+- User wants "recettes rapides" (Level 2) + profile says "Faire des économies" (Level 3) → Quick AND cheap recipes
+- Price slider at 10/100 (Level 1) + wants "plats gastronomiques" (Level 2) → Gastronomic recipes with cheap ingredients (creative)
 
 Return ONLY a valid JSON array of recipe objects with this exact structure:
 [
@@ -215,10 +210,6 @@ When the user asks to add products, use this basket ID (${basketId}) to add item
       } catch (e) {
         console.log('No valid JSON action found');
       }
-    }
-
-    if (action === 'suggest_products') {
-      await persistProductSuggestions(assistantMessage, actionData);
     }
 
     res.json({
@@ -412,36 +403,92 @@ export const generateRecipes = async (req, res) => {
       }
     }
 
-    // Build comprehensive context
-    let profileContext = '';
+    // Build comprehensive context with clear hierarchy
+    let level1Restrictions = [];
+    let level2Priority = '';
+    let level3Preferences = [];
+    
     if (userProfile) {
-      profileContext = `
-USER PROFILE:
-- Recipe Preferences: ${userProfile.recipe_preferences?.length > 0 ? userProfile.recipe_preferences.join(', ') : 'None specified'}
-- Dietary Restrictions: ${userProfile.dietary_restrictions?.length > 0 ? userProfile.dietary_restrictions.join(', ') : 'None'}
-- Culinary Goals: ${userProfile.culinary_goals?.length > 0 ? userProfile.culinary_goals.join(', ') : 'None'}
-- Excluded Foods: ${userProfile.excluded_foods || 'None'}
-- Price Preference: ${userProfile.price_preference}/100 (0=cheap, 100=premium)
-- Nutriscore Importance: ${userProfile.nutriscore_importance}/100
-- Organic Importance: ${userProfile.organic_importance}/100
-- Local Importance: ${userProfile.local_importance}/100
-`;
-    } else {
-      profileContext = 'USER PROFILE: No profile configured (use default preferences)';
+      // LEVEL 1: Absolute restrictions
+      if (userProfile.dietary_restrictions?.length > 0) {
+        level1Restrictions.push(`🔴 DIETARY RESTRICTIONS (MANDATORY): ${userProfile.dietary_restrictions.join(', ')}`);
+      }
+      if (userProfile.excluded_foods && userProfile.excluded_foods.trim() !== '') {
+        level1Restrictions.push(`🔴 EXCLUDED FOODS (FORBIDDEN): ${userProfile.excluded_foods}`);
+      }
+      
+      // Check for extreme slider values (0-20 or 80-100 are considered absolute)
+      if (userProfile.price_preference <= 20) {
+        level1Restrictions.push(`🔴 PRICE CONSTRAINT: Only use very cheap, budget-friendly ingredients (Price=${userProfile.price_preference}/100)`);
+      } else if (userProfile.price_preference >= 80) {
+        level1Restrictions.push(`🔴 PRICE CONSTRAINT: Only use premium, high-quality ingredients (Price=${userProfile.price_preference}/100)`);
+      }
+      
+      if (userProfile.nutriscore_importance >= 80) {
+        level1Restrictions.push(`🔴 NUTRITION CONSTRAINT: Only recipes with Nutriscore A or B, very healthy (Nutriscore=${userProfile.nutriscore_importance}/100)`);
+      } else if (userProfile.nutriscore_importance <= 20) {
+        level1Restrictions.push(`🔴 NUTRITION CONSTRAINT: User doesn't care about nutritional balance (Nutriscore=${userProfile.nutriscore_importance}/100)`);
+      }
+      
+      // LEVEL 3: Background preferences
+      if (userProfile.recipe_preferences?.length > 0) {
+        level3Preferences.push(`Recipe Style Preferences: ${userProfile.recipe_preferences.join(', ')}`);
+      }
+      if (userProfile.culinary_goals?.length > 0) {
+        level3Preferences.push(`Culinary Goals: ${userProfile.culinary_goals.join(', ')}`);
+      }
+      
+      // Moderate slider values go to Level 3
+      if (userProfile.price_preference > 20 && userProfile.price_preference < 80) {
+        level3Preferences.push(`Price Preference: ${userProfile.price_preference}/100`);
+      }
+      if (userProfile.nutriscore_importance > 20 && userProfile.nutriscore_importance < 80) {
+        level3Preferences.push(`Nutriscore Importance: ${userProfile.nutriscore_importance}/100`);
+      }
+      if (userProfile.organic_importance > 30) {
+        level3Preferences.push(`Organic Preference: ${userProfile.organic_importance}/100${userProfile.organic_importance >= 70 ? ' (HIGH - mention organic when possible)' : ''}`);
+      }
+      if (userProfile.local_importance > 30) {
+        level3Preferences.push(`Local/Seasonal Preference: ${userProfile.local_importance}/100${userProfile.local_importance >= 70 ? ' (HIGH - prioritize seasonal products)' : ''}`);
+      }
     }
 
-    const currentRequestContext = keyPhrases.length > 0 
-      ? `User Text for This Week: ${keyPhrases.join(', ')}` 
-      : 'User Text: No specific preferences provided for this week';
+    // LEVEL 2: Current request (highest priority for creative direction)
+    if (keyPhrases.length > 0) {
+      level2Priority = `🟡 USER'S IMMEDIATE REQUEST (PRIMARY INSPIRATION): "${keyPhrases.join(', ')}"`;
+    } else {
+      level2Priority = `🟡 USER'S IMMEDIATE REQUEST: No specific theme provided - use profile preferences`;
+    }
+
+    // Build the final prompt with clear hierarchy
+    let profileContext = '';
+    
+    if (level1Restrictions.length > 0) {
+      profileContext += `\n🔴 LEVEL 1 - ABSOLUTE RESTRICTIONS (NEVER VIOLATE):\n${level1Restrictions.map(r => `  ${r}`).join('\n')}\n`;
+    } else {
+      profileContext += `\n🔴 LEVEL 1 - ABSOLUTE RESTRICTIONS: None\n`;
+    }
+    
+    profileContext += `\n${level2Priority}\n`;
+    
+    if (level3Preferences.length > 0) {
+      profileContext += `\n🟢 LEVEL 3 - BACKGROUND PREFERENCES (GUIDE WHEN POSSIBLE):\n${level3Preferences.map(p => `  - ${p}`).join('\n')}\n`;
+    } else {
+      profileContext += `\n🟢 LEVEL 3 - BACKGROUND PREFERENCES: None specified\n`;
+    }
 
     const userPrompt = `${profileContext}
 
-CURRENT REQUEST:
-- Number of Meals: ${numberOfMeals}
-- Number of People: ${numberOfPeople}
-- ${currentRequestContext}
+TASK:
+- Generate ${numberOfMeals} different recipes for ${numberOfPeople} person(s)
+- Start with Level 2 (user's immediate request) as primary inspiration
+- Adapt creatively to satisfy Level 1 restrictions if there's a conflict
+- Use Level 3 to guide style and details
 
-Generate ${numberOfMeals} recipes that respect ALL the above constraints, especially dietary restrictions and excluded foods.
+CRITICAL: If the user's request conflicts with Level 1 restrictions, adapt the request intelligently.
+Example: Vegetarian + wants "burger" → Create a delicious vegetarian burger
+Example: Excludes fish + wants "Mediterranean" → Focus on vegetables, pasta, legumes
+
 Return ONLY the JSON array, nothing else.`;
 
     const completion = await openai.chat.completions.create({

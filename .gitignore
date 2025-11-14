@@ -41,9 +41,6 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
-# NPM authentication tokens (contains secrets)
-.npmrc
-
 # Logs
 *.log
 npm-debug.log*

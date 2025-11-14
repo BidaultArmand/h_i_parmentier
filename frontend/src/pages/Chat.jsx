@@ -39,7 +39,8 @@ function Chat() {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 160); // Min 48px, Max 160px
+      textarea.style.height = newHeight + 'px';
     }
   };
 
@@ -378,81 +379,36 @@ function Chat() {
           </div>
         </div>
 
-        {/* Chat Area - Compact */}
-        <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-xl overflow-hidden flex flex-col" style={{ height: '180px' }}>
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Chat Area - Dynamic Height */}
+        <div 
+          className="bg-card border-2 border-primary/20 rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all duration-300"
+          style={{ 
+            minHeight: '120px',
+            maxHeight: '400px',
+            height: 'auto'
+          }}
+        >
+          {/* Messages - Only User Input */}
+          <div className="flex-1 overflow-y-auto p-3">
             {messages.length === 0 && !loading && (
               <div className="h-full flex items-center justify-center">
-                <p className="text-xs text-muted-foreground text-center max-w-md">
-                  Décrivez vos préférences culinaires pour générer vos recettes de la semaine
+                <p className="text-base text-muted-foreground text-center max-w-md font-medium">
+                  Quelles sont vos envies du moment ?
                 </p>
               </div>
             )}
             
             {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-2 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Bot className="h-4 w-4 text-primary" />
+              message.role === 'user' && (
+                <div key={index} className="flex gap-2 justify-end mb-2">
+                  <div className="max-w-[85%] rounded-2xl px-4 py-2.5 bg-primary text-primary-foreground">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   </div>
-                )}
-
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : message.error
-                      ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                      : 'bg-muted'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  
-                  {/* Key Phrases */}
-                  {message.keyPhrases && message.keyPhrases.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {message.keyPhrases.map((phrase, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {phrase}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Recipe Cards */}
-                  {message.recipes && message.recipes.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      {message.recipes.map((recipe, idx) => (
-                        <div key={idx} className="bg-background border rounded-lg p-3 text-left">
-                          <h4 className="font-semibold text-sm text-foreground">{recipe.name}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">{recipe.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Ingredients JSON Preview */}
-                  {message.ingredientsJSON && (
-                    <div className="mt-3 p-3 bg-background border rounded-lg">
-                      <p className="text-xs font-mono text-foreground whitespace-pre-wrap">
-                        {JSON.stringify(message.ingredientsJSON, null, 2)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {message.role === 'user' && (
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary">
                     <User className="h-4 w-4 text-secondary-foreground" />
                   </div>
-                )}
-              </div>
+                </div>
+              )
             ))}
 
             {loading && (
@@ -484,9 +440,9 @@ function Chat() {
                 }}
                 placeholder="Ex: Plats méditerranéens avec produits de saison"
                 disabled={loading}
-                rows={2}
-                className="flex-1 resize-none border border-primary/20 rounded-xl px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50 bg-background"
-                style={{ minHeight: '48px', maxHeight: '120px' }}
+                rows={1}
+                className="flex-1 resize-none border border-primary/20 rounded-xl px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50 bg-background transition-all duration-200"
+                style={{ minHeight: '48px', maxHeight: '160px', overflow: 'hidden' }}
               />
               <Button 
                 type="submit" 
@@ -503,6 +459,23 @@ function Chat() {
             </form>
           </div>
         </div>
+
+        {/* Key Phrases Display - Outside chat, before generate button */}
+        {keyPhrases.length > 0 && (
+          <div className="mt-4 mb-4">
+            <div className="flex flex-wrap gap-2 justify-center">
+              {keyPhrases.map((phrase, idx) => (
+                <Badge 
+                  key={idx} 
+                  variant="secondary" 
+                  className="text-sm px-4 py-2 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  {phrase}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Generate Button */}
         <div className="mt-6 flex justify-center">
