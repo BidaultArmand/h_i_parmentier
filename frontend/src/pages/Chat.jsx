@@ -28,6 +28,7 @@ function Chat() {
   
   const [ingredientsData, setIngredientsData] = useState(null);
   const [currentStep, setCurrentStep] = useState('input'); // 'input', 'recipes', 'ingredients'
+  const [selectedRecipe, setSelectedRecipe] = useState(null); // Recipe selected for detail view
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -542,7 +543,11 @@ function Chat() {
               const colorClass = colors[idx % colors.length];
               
               return (
-                <Card key={idx} className="hover:shadow-lg transition-shadow relative group overflow-hidden">
+                <Card 
+                  key={idx} 
+                  className="hover:shadow-lg transition-shadow relative group overflow-hidden cursor-pointer"
+                  onClick={() => setSelectedRecipe(recipe)}
+                >
                   {/* Recipe Image */}
                   <div className="relative h-48 w-full overflow-hidden bg-muted">
                     {imageUrl ? (
@@ -568,7 +573,10 @@ function Chat() {
                         variant="secondary"
                         size="icon"
                         className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        onClick={() => handleReplaceRecipe(idx)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReplaceRecipe(idx);
+                        }}
                         disabled={replacingRecipeIndex === idx}
                         title="Remplacer cette recette"
                       >
@@ -594,6 +602,79 @@ function Chat() {
               );
             })}
           </div>
+
+          {/* Recipe Detail Modal */}
+          {selectedRecipe && (
+            <div 
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setSelectedRecipe(null)}
+            >
+              <div 
+                className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
+                  <h3 className="text-2xl font-bold">{selectedRecipe.name}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedRecipe(null)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  {/* Recipe Info */}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{selectedRecipe.cuisine}</Badge>
+                    <Badge variant="secondary">{selectedRecipe.difficulty}</Badge>
+                    <Badge variant="secondary">{selectedRecipe.prepTime}</Badge>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <p className="text-muted-foreground">{selectedRecipe.description}</p>
+                  </div>
+
+                  {/* Ingredients */}
+                  {selectedRecipe.ingredients && selectedRecipe.ingredients.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-lg mb-3">Ingrédients</h4>
+                      <ul className="space-y-2">
+                        {selectedRecipe.ingredients.map((ingredient, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span className="text-sm">
+                              {ingredient.quantity ? `${ingredient.quantity} - ` : ''}
+                              {ingredient.name || ingredient}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Steps */}
+                  {selectedRecipe.steps && selectedRecipe.steps.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-lg mb-3">Étapes de préparation</h4>
+                      <ol className="space-y-3">
+                        {selectedRecipe.steps.map((step, idx) => (
+                          <li key={idx} className="flex gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                              {idx + 1}
+                            </span>
+                            <span className="text-sm pt-0.5">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action Button - Centered */}
           <div className="flex justify-center">
