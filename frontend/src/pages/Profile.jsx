@@ -119,50 +119,62 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Chargement du profil...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
+          <p className="text-gray-600 font-medium">Chargement du profil...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Mon Profil</h1>
-        <p className="text-gray-600">
-          Personnalisez vos préférences pour des recommandations adaptées à vos besoins.
-        </p>
-        {user?.email && (
-          <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
-            <span className="font-medium">Email:</span> {user.email}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        
+        {/* Header - Apple Style */}
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-semibold text-gray-900 mb-3 tracking-tight">Mon Profil</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Personnalisez vos préférences pour des recommandations adaptées à vos besoins.
           </p>
-        )}
-      </div>
-
-      {message.text && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {message.text}
+          {user?.email && (
+            <p className="text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="font-medium">{user.email}</span>
+            </p>
+          )}
         </div>
-      )}
 
-      <div className="space-y-8">
+        {message.text && (
+          <div className={`mb-6 p-4 rounded-2xl backdrop-blur-sm ${
+            message.type === 'success' 
+              ? 'bg-green-50/80 text-green-800 border border-green-200' 
+              : 'bg-red-50/80 text-red-800 border border-red-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {message.type === 'success' ? '✓' : '⚠️'}
+              <span className="font-medium">{message.text}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6">
         {/* 1. Préférences de recettes */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-2">1 • Vos préférences de recettes</h2>
-          <p className="text-sm text-gray-600 mb-4">
+        <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-3xl hover:shadow-xl transition-shadow">
+          <h2 className="text-2xl font-semibold mb-1 text-gray-900">Vos préférences de recettes</h2>
+          <p className="text-sm text-gray-500 mb-6">
             Vos repas seront automatiquement adaptés selon vos goûts. Modifiables à tout moment.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {recipeOptions.map(option => (
               <button
                 key={option}
                 onClick={() => toggleOption(option, recipePreferences, setRecipePreferences)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   recipePreferences.includes(option)
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                 }`}
               >
                 {option}
@@ -172,17 +184,20 @@ const Profile = () => {
         </Card>
 
         {/* 2. Restrictions alimentaires */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">2 • Vos restrictions alimentaires</h2>
-          <div className="flex flex-wrap gap-2">
+        <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-3xl hover:shadow-xl transition-shadow">
+          <h2 className="text-2xl font-semibold mb-1 text-gray-900">Vos restrictions alimentaires</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Ces contraintes sont absolues et ne seront jamais violées.
+          </p>
+          <div className="flex flex-wrap gap-3">
             {restrictionOptions.map(option => (
               <button
                 key={option}
                 onClick={() => toggleOption(option, dietaryRestrictions, setDietaryRestrictions)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   dietaryRestrictions.includes(option)
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-red-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                 }`}
               >
                 {option}
@@ -192,18 +207,18 @@ const Profile = () => {
         </Card>
 
         {/* 3. Objectifs culinaires */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-2">3 • Vos objectifs culinaires</h2>
-          <p className="text-sm text-gray-600 mb-4">Ce qui vous motive au quotidien.</p>
-          <div className="flex flex-wrap gap-2">
+        <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-3xl hover:shadow-xl transition-shadow">
+          <h2 className="text-2xl font-semibold mb-1 text-gray-900">Vos objectifs culinaires</h2>
+          <p className="text-sm text-gray-500 mb-6">Ce qui vous motive au quotidien.</p>
+          <div className="flex flex-wrap gap-3">
             {goalOptions.map(option => (
               <button
                 key={option}
                 onClick={() => toggleOption(option, culinaryGoals, setCulinaryGoals)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   culinaryGoals.includes(option)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-green-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                 }`}
               >
                 {option}
@@ -213,27 +228,27 @@ const Profile = () => {
         </Card>
 
         {/* 4. Aliments à exclure */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-2">4 • Aliments à exclure</h2>
-          <p className="text-sm text-gray-600 mb-4">
+        <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-3xl hover:shadow-xl transition-shadow">
+          <h2 className="text-2xl font-semibold mb-1 text-gray-900">Aliments à exclure</h2>
+          <p className="text-sm text-gray-500 mb-6">
             Y a-t-il des aliments que vous n'aimez pas ou à éviter ?
           </p>
           <textarea
             value={excludedFoods}
             onChange={(e) => setExcludedFoods(e.target.value)}
             placeholder="Exemple : champignons, coriandre, fruits de mer, poivrons, produits laitiers…"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+            className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-gray-50/50 text-gray-900 placeholder-gray-400"
             rows="4"
           />
         </Card>
 
         {/* 5. Critères de sélection */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-2">5 • Vos critères de sélection des produits</h2>
-          <p className="text-sm text-gray-600 mb-6">
+        <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-3xl hover:shadow-xl transition-shadow">
+          <h2 className="text-2xl font-semibold mb-1 text-gray-900">Vos critères de sélection des produits</h2>
+          <p className="text-sm text-gray-500 mb-8">
             Ajustez vos préférences en fonction de votre style de vie.
           </p>
-          <div className="space-y-6">
+          <div className="space-y-8">
             <Slider
               label="Prix"
               value={pricePreference}
@@ -266,16 +281,18 @@ const Profile = () => {
         </Card>
       </div>
 
-      {/* Bouton de sauvegarde */}
-      <div className="mt-8 flex justify-end">
+      {/* Bouton de sauvegarde - Apple Style */}
+      <div className="mt-8 flex justify-center pb-8">
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-12 py-4 bg-blue-600 text-white text-base font-medium rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
         >
-          {saving ? 'Sauvegarde...' : 'Sauvegarder mon profil'}
+          {saving ? '⏳ Sauvegarde en cours...' : '✓ Sauvegarder mon profil'}
         </Button>
       </div>
+      
+    </div>
     </div>
   );
 };
