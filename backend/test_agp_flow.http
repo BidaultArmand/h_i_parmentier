@@ -1,0 +1,209 @@
+###
+# Test du flux ChatController -> AGP Controller
+###
+
+@baseUrl = http://localhost:3000
+@apiUrl = {{baseUrl}}/api
+
+###############################################################################
+# OPTION 1: Flux automatique complet (génération + recherche AGP)
+###############################################################################
+
+### Générer les ingrédients ET lancer la recherche AGP automatiquement
+POST {{apiUrl}}/chat/generate-ingredients
+Content-Type: application/json
+
+{
+  "recipes": [
+    {
+      "name": "Pâtes à l'ail et à l'huile d'olive",
+      "description": "Recette simple et rapide avec des ingrédients de base"
+    },
+    {
+      "name": "Salade grecque",
+      "description": "Salade fraîche avec tomates, concombres, olives et feta"
+    }
+  ],
+  "numberOfPeople": 2,
+  "triggerAgpSearch": true
+}
+
+###############################################################################
+# OPTION 2: Flux en deux étapes (recommandé pour grandes listes)
+###############################################################################
+
+### Étape 1: Générer uniquement la liste d'ingrédients
+POST {{apiUrl}}/chat/generate-ingredients
+Content-Type: application/json
+
+{
+  "recipes": [
+    {
+      "name": "Risotto aux champignons",
+      "description": "Risotto crémeux avec champignons de Paris"
+    }
+  ],
+  "numberOfPeople": 4,
+  "triggerAgpSearch": false
+}
+
+### Étape 2: Lancer manuellement la recherche AGP (lit product_to_search.json)
+POST {{apiUrl}}/agp/search-from-json
+Content-Type: application/json
+
+###############################################################################
+# TESTS UNITAIRES
+###############################################################################
+
+### Test 1: Résumer les préférences utilisateur
+POST {{apiUrl}}/chat/summarize
+Content-Type: application/json
+
+{
+  "text": "Je veux des repas méditerranéens, légers et rapides à préparer pour la semaine"
+}
+
+### Test 2: Générer des recettes basées sur les préférences
+POST {{apiUrl}}/chat/generate-recipes
+Content-Type: application/json
+
+{
+  "keyPhrases": ["méditerranéen", "léger", "rapide"],
+  "numberOfMeals": 3,
+  "numberOfPeople": 2,
+  "userId": null
+}
+
+### Test 3: Générer les images des recettes
+POST {{apiUrl}}/chat/generate-images
+Content-Type: application/json
+
+{
+  "recipes": [
+    {
+      "name": "Salade niçoise",
+      "imageSearch": "salade niçoise"
+    },
+    {
+      "name": "Grilled chicken",
+      "imageSearch": "grilled chicken breast"
+    }
+  ]
+}
+
+###############################################################################
+# TESTS AGP CONTROLLER (endpoints individuels)
+###############################################################################
+
+### Test AGP basique
+POST {{apiUrl}}/agp/test
+Content-Type: application/json
+
+### Exécuter une tâche personnalisée
+POST {{apiUrl}}/agp/run
+Content-Type: application/json
+
+{
+  "objective": "Search for the best organic pasta on La Vie Claire website",
+  "startUrl": "https://mescoursesenligne.lavieclaire.com/"
+}
+
+### Comparer les prix de plusieurs produits
+POST {{apiUrl}}/agp/shop
+Content-Type: application/json
+
+{
+  "products": ["Organic Olive Oil", "Whole Wheat Pasta"]
+}
+
+### Exécuter plusieurs tâches en parallèle
+POST {{apiUrl}}/agp/batch
+Content-Type: application/json
+
+{
+  "tasks": [
+    {
+      "objective": "Find organic tomatoes on La Vie Claire",
+      "startUrl": "https://mescoursesenligne.lavieclaire.com/"
+    },
+    {
+      "objective": "Find organic olive oil on La Vie Claire",
+      "startUrl": "https://mescoursesenligne.lavieclaire.com/"
+    }
+  ]
+}
+
+###############################################################################
+# FLUX COMPLET DE BOUT EN BOUT
+###############################################################################
+
+### 1. Résumer les préférences
+# @name summarize
+POST {{apiUrl}}/chat/summarize
+Content-Type: application/json
+
+{
+  "text": "Je veux manger sainement cette semaine, avec des plats végétariens et bio si possible"
+}
+
+### 2. Générer les recettes basées sur les préférences
+# @name generateRecipes
+POST {{apiUrl}}/chat/generate-recipes
+Content-Type: application/json
+
+{
+  "keyPhrases": ["sain", "végétarien", "bio"],
+  "numberOfMeals": 5,
+  "numberOfPeople": 2,
+  "userId": null
+}
+
+### 3. Générer les ingrédients à partir des recettes
+# @name generateIngredients
+POST {{apiUrl}}/chat/generate-ingredients
+Content-Type: application/json
+
+{
+  "recipes": [
+    {
+      "name": "Buddha Bowl végétarien",
+      "description": "Bowl complet avec quinoa, légumes rôtis et houmous"
+    },
+    {
+      "name": "Curry de lentilles aux épinards",
+      "description": "Curry doux et crémeux avec lentilles corail"
+    },
+    {
+      "name": "Salade de quinoa méditerranéenne",
+      "description": "Salade fraîche avec quinoa, tomates séchées et feta"
+    }
+  ],
+  "numberOfPeople": 2,
+  "triggerAgpSearch": true
+}
+
+### 4. (Optionnel) Voir les résultats dans product_to_search.json
+# Ouvrir le fichier: backend/data/product_to_search.json
+
+### 5. (Optionnel) Voir les résultats AGP
+# Ouvrir les fichiers dans: backend/data/agpresp/
+
+###############################################################################
+# NOTES
+###############################################################################
+
+# Pour utiliser ce fichier:
+# 1. Installez l'extension REST Client pour VS Code
+# 2. Assurez-vous que le serveur backend tourne (npm run dev)
+# 3. Cliquez sur "Send Request" au-dessus de chaque requête
+# 4. Les résultats s'afficheront dans un panneau à droite
+
+# Variables disponibles:
+# - {{baseUrl}} : L'URL de base du serveur (http://localhost:3000)
+# - {{apiUrl}} : L'URL de l'API ({{baseUrl}}/api)
+
+# Workflow recommandé:
+# 1. Tester d'abord avec de petites listes (1-2 recettes)
+# 2. Utiliser triggerAgpSearch: false pour les tests rapides
+# 3. Lancer manuellement AGP quand vous êtes prêt
+# 4. Pour de grandes listes, utiliser le flux en deux étapes

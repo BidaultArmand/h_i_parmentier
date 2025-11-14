@@ -1,6 +1,14 @@
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { searchProductsAutomatically } from './agpController.js';
+
+// Pour obtenir __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ensure environment variables are loaded
 dotenv.config();
@@ -541,7 +549,7 @@ export const generateIngredients = async (req, res) => {
       });
     }
 
-    const { recipes, numberOfPeople } = req.body;
+    const { recipes, numberOfPeople, triggerAgpSearch = false } = req.body;
 
     if (!recipes || recipes.length === 0 || !numberOfPeople) {
       return res.status(400).json({
@@ -584,10 +592,65 @@ Return a detailed JSON with ingredients per recipe and a consolidated shopping l
       });
     }
 
-    res.json({
+    // Sauvegarder le résultat dans product_to_search.json pour AGP
+    let agpSearchResult = null;
+    try {
+      const dataDir = path.join(__dirname, '../../data');
+
+      // Créer le dossier data s'il n'existe pas
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+
+      const filePath = path.join(dataDir, 'product_to_search.json');
+
+      // Préparer le JSON avec timestamp et métadonnées
+      const dataToSave = {
+        timestamp: new Date().toISOString(),
+        numberOfPeople,
+        recipes: ingredients.recipes || [],
+        shoppingList: ingredients.shoppingList || []
+      };
+
+      // Sauvegarder dans le fichier
+      fs.writeFileSync(filePath, JSON.stringify(dataToSave, null, 2), 'utf-8');
+
+      console.log(`✅ Liste d'ingrédients sauvegardée dans ${filePath}`);
+      console.log(`📦 ${ingredients.recipes?.length || 0} recette(s) et ${ingredients.shoppingList?.length || 0} ingrédient(s) uniques`);
+
+      // Déclencher la recherche AGP si demandé
+      if (triggerAgpSearch) {
+        console.log('🚀 Déclenchement automatique de la recherche AGP...');
+        try {
+          agpSearchResult = await searchProductsAutomatically();
+          console.log('✅ Recherche AGP terminée avec succès!');
+        } catch (agpError) {
+          console.error('⚠️  Erreur lors de la recherche AGP:', agpError);
+          agpSearchResult = {
+            success: false,
+            error: agpError.message
+          };
+        }
+      }
+    } catch (saveError) {
+      console.error('⚠️  Erreur lors de la sauvegarde dans product_to_search.json:', saveError);
+      // On ne bloque pas la réponse si la sauvegarde échoue
+    }
+
+    const response = {
       success: true,
-      ingredients
-    });
+      ingredients,
+      savedToFile: true,
+      message: 'Ingredients generated and saved to product_to_search.json. Ready for AGP search.'
+    };
+
+    // Ajouter les résultats AGP si la recherche a été déclenchée
+    if (triggerAgpSearch) {
+      response.agpSearchTriggered = true;
+      response.agpSearchResult = agpSearchResult;
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Generate ingredients error:', error);
     res.status(500).json({
