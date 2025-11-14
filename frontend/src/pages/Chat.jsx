@@ -93,9 +93,11 @@ function Chat() {
 
     } catch (error) {
       console.error('Summarize error:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      console.error('API URL:', `${API_URL}/chat/summarize`);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Désolé, j\'ai rencontré une erreur lors de l\'analyse de vos préférences.',
+        content: `Désolé, j'ai rencontré une erreur lors de l'analyse de vos préférences. ${error.response?.data?.error || error.message}`,
         timestamp: new Date(),
         error: true
       }]);
