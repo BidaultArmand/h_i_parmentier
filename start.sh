@@ -30,18 +30,16 @@ trap cleanup INT
 
 # Démarrer le backend
 echo "🔧 Démarrage du backend sur http://localhost:5001..."
-cd backend && npm run dev > ../backend.log 2>&1 &
+(cd backend && npm run dev > ../backend.log 2>&1) &
 BACKEND_PID=$!
-cd ..
 
 # Attendre que le backend démarre
 sleep 2
 
 # Démarrer le frontend
 echo "🎨 Démarrage du frontend sur http://localhost:5173..."
-cd frontend && npm run dev > ../frontend.log 2>&1 &
+(cd frontend && npm run dev > ../frontend.log 2>&1) &
 FRONTEND_PID=$!
-cd ..
 
 # Attendre que le frontend démarre
 sleep 3
