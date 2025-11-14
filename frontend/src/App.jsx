@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import LandingPageDev from './pages/LandingPageDev';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

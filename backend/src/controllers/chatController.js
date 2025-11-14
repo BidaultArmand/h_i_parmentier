@@ -1,9 +1,17 @@
+import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import supabase from '../config/supabase.js';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Load environment variables before initializing OpenAI
+dotenv.config();
+
+// Initialize OpenAI only if API key is provided
+let openai = null;
+if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key-here') {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 const SYSTEM_PROMPT = `You are a smart grocery shopping assistant. Help users create shopping lists and add products to their baskets.
 
@@ -36,6 +44,15 @@ export const chat = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Message is required'
+      });
+    }
+
+    // Check if OpenAI is available
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        error: 'OpenAI service is not configured. Please add OPENAI_API_KEY to your .env file.',
+        message: 'AI chat is currently unavailable. Please configure the OpenAI API key to use this feature.'
       });
     }
 
